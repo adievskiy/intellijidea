@@ -1,73 +1,71 @@
-data class Employee(val name: String, val age: Int, val salary: Double)
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlin.random.Random
 
-fun main() {
-    val employees = listOf(
-        Employee("Иван", 30, 60000.0),
-        Employee("Сергей", 24, 50000.0),
-        Employee("Петр", 29, 70000.0),
-        Employee("Алексей", 35, 40000.0),
-        Employee("Василий", 28, 80000.0)
-    )
+data class Person(val name: String, val salary: Double)
 
-    val sortedByName = employees.sortedBy { it.name }
-    println("Сотрудники, отсортированные по имени:")
-    sortedByName.forEach { println(it) }
-
-    val sortedByAge = employees.sortedBy { it.age }
-    println("\nСотрудники, отсортированные по возрасту:")
-    sortedByAge.forEach { println(it) }
-
-    val sortedBySalary = employees.sortedBy { it.salary }
-    println("\nСотрудники, отсортированные по зарплате:")
-    sortedBySalary.forEach { println(it) }
-
-    val matrix = arrayOf(
-        intArrayOf(4, 2, 1, 3),
-        intArrayOf(8, 7, 6, 5),
-        intArrayOf(12, 11, 10, 9)
-    )
-
-    for (i in matrix.indices) {
-        matrix[i].sort()
-    }
-
-    println("Отсортированные строки матрицы:")
-    for (row in matrix) {
-        println(row.joinToString(" "))
-    }
-
-    val matrixTwo = arrayOf(
-        intArrayOf(1, 3, 2, 4),
-        intArrayOf(5, 10, 15, 20),
-        intArrayOf(7, 6, 8, 5)
-    )
-    var count = 0
-    val zigzagRows = mutableListOf<IntArray>()
-
-    for (row in matrixTwo) {
-        if (isZigzag(row)) {
-            count++
-            zigzagRows.add(row)
-        }
-    }
-
-    println("Количество пилообразных массивов: $count")
-    if (count > 0) {
-        println("Пилообразные массивы:")
-        for (zigzagRow in zigzagRows) {
-            println(zigzagRow.joinToString(" "))
-        }
-    } else {
-        println("Пилообразных массивов не найдено.")
-    }
+fun generatePassword(): Int {
+    return Random.nextInt(100000, 999999)
 }
 
-fun isZigzag(array: IntArray): Boolean {
-    for (i in 1 until array.size - 1) {
-        if (!((array[i] > array[i - 1] && array[i] > array[i + 1]) ||
-                    (array[i] < array[i - 1] && array[i] < array[i + 1]))) {
-            return false
+fun main() = runBlocking {
+    val manager = PersonManager()
+    val resultList = mutableMapOf<Person, Int>()
+
+    println("Программа работы с базой данных сотрудников")
+
+    delay(1000L)
+    println("Добавить сотрудника?\n1. Да\n2. Нет")
+    var choise = readln()
+    while (true) {
+        when (choise) {
+            "1" -> {
+                println("Введите имя сотрудника:")
+                val name = readln().trim()
+                println("Введите зарплату сотрудника:")
+                val salary = readln().toDoubleOrNull() ?: continue
+                val person = Person(name, salary)
+                manager.addPerson(person)
+                println("Сотрудник добавлен: $person")
+
+                delay(1000L)
+                println("Добавить сотрудника?\n1. Да\n2. Прочитать базу данных")
+                choise = readln()
+                when (choise) {
+                    "2" -> println(manager.getPersonList())
+                }
+            }
+            "2" -> break
+            else -> println("Неверный ввод")
         }
     }
-    return true
+    val job = launch { addPassword(resultList, manager.getPersonList()) }
+    val cancelJob = launch {
+        while (true) {
+            if (readln().trim() == "0") {
+                job.cancel()
+                break
+            }
+        }
+    }
+    cancelJob.join()
+}
+
+suspend fun addPassword(resultList: MutableMap<Person, Int>, personList: List<Person>) {
+    for (person in personList) {
+        delay(500L)
+        val password = generatePassword()
+        resultList[person] = password
+        println("Пароль для сотрудника ${person.name} добавлен: $password")
+    }
+    delay(1000L)
+    readDataPersonList(resultList)
+}
+
+suspend fun readDataPersonList(resultList: Map<Person, Int>) {
+    for (entry in resultList.entries) {
+        delay(100L)
+        println("Сотрудник: ${entry.key}; пароль: ${entry.value}")
+    }
 }
